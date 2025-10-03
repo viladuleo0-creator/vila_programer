@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vila_Program</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: linear-gradient(to right, #0f0f1a, #1a1a40, #3b0066);
+      color: white;
+    }
+    header {
+      background: #000033;
+      padding: 10px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+    header button {
+      background: #3b0066;
+      border: none;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    header button:hover { background: #0055cc; }
+    h2 { text-align: center; color: #99ccff; }
+
+    .hidden { display: none; }
+
+    .container { padding: 20px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    table, th, td {
+      border: 1px solid #444;
+    }
+    th, td {
+      padding: 8px;
+      text-align: center;
+    }
+    th { background: #222; }
+    tr:nth-child(even) { background: #1a1a33; }
+
+    .sell-window {
+      background: #111122;
+      padding: 15px;
+      border-radius: 10px;
+      margin: 15px;
+      box-shadow: 0 0 10px black;
+    }
+    .sell-window h3 { margin-top: 0; }
+    .sell-window button {
+      margin-top: 10px;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .confirm { background: #008000; color: white; }
+    .remove { background: #cc0000; color: white; }
+    .clear { background: #444; color: white; }
+    .reset { background: #9900cc; color: white; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <header>
+    <button onclick="showSection('home')">Home</button>
+    <button onclick="showSection('addProduct')">Shto Produkt</button>
+    <button onclick="showSection('inventory')">NR Produkteve</button>
+    <button onclick="showSection('sales')">Shitjet</button>
+  </header>
+
+  <!-- Sell Window -->
+  <div class="sell-window" id="sellWindow">
+    <h3>Shporta</h3>
+    <table id="cartTable">
+      <tr><th>Produkt</th><th>Çmimi</th><th>Veprim</th></tr>
+    </table>
+    <button class="confirm" onclick="confirmSale()">✅ Pohim</button>
+    <button class="clear" onclick="clearCart()">🗑️ Pastro Shportën</button>
+  </div>
+
+  <!-- Home (Produktet për shitje) -->
+  <div class="container" id="home">
+    <h2>Produktet</h2>
+    <table id="productsTable">
+      <tr><th>Produkt</th><th>Çmimi</th></tr>
+    </table>
+  </div>
+
+  <!-- Add Product -->
+  <div class="container hidden" id="addProduct">
+    <h2>Shto Produkt</h2>
+    <input type="text" id="prodName" placeholder="Emri" />
+    <input type="number" id="prodPrice" placeholder="Çmimi" />
+    <input type="number" id="prodQty" placeholder="Sasia" />
+    <button onclick="addProduct()">Ruaj</button>
+  </div>
+
+  <!-- Inventory -->
+  <div class="container hidden" id="inventory">
+    <h2>NR Produkteve</h2>
+    <table id="inventoryTable">
+      <tr><th>Produkt</th><th>Çmimi</th><th>Sasia</th></tr>
+    </table>
+  </div>
+
+  <!-- Sales -->
+  <div class="container hidden" id="sales">
+    <h2>Shitjet</h2>
+    <table id="salesTable">
+      <tr><th>Produkti</th><th>Çmimi</th></tr>
+    </table>
+    <h3 id="totalSales">Xhiro Totale: 0 Lekë</h3>
+    <button class="reset" onclick="resetSales()">🔄 Mbyll Turnin</button>
+  </div>
+
+<script>
+  let products = [];
+  let cart = [];
+  let sales = [];
+  let totalSales = 0;
+
+  function showSection(id) {
+    document.querySelectorAll('.container').forEach(div => div.classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+  }
+
+  function addProduct() {
+    let name = document.getElementById('prodName').value;
+    let price = parseFloat(document.getElementById('prodPrice').value);
+    let qty = parseInt(document.getElementById('prodQty').value);
+
+    if (!name || isNaN(price) || isNaN(qty)) {
+      alert("Plotëso të gjitha fushat!");
+      return;
+    }
+
+    products.push({ name, price, qty });
+    updateTables();
+    document.getElementById('prodName').value = '';
+    document.getElementById('prodPrice').value = '';
+    document.getElementById('prodQty').value = '';
+    showSection('home');
+  }
+
+  function updateTables() {
+    // Home table
+    let pTable = document.getElementById('productsTable');
+    pTable.innerHTML = "<tr><th>Produkt</th><th>Çmimi</th></tr>";
+    products.forEach((p, i) => {
+      let row = pTable.insertRow();
+      row.insertCell(0).innerText = p.name;
+      row.insertCell(1).innerText = p.price + " Lekë";
+      row.onclick = () => addToCart(i);
+    });
+
+    // Inventory table
+    let iTable = document.getElementById('inventoryTable');
+    iTable.innerHTML = "<tr><th>Produkt</th><th>Çmimi</th><th>Sasia</th></tr>";
+    products.forEach(p => {
+      let row = iTable.insertRow();
+      row.insertCell(0).innerText = p.name;
+      row.insertCell(1).innerText = p.price + " Lekë";
+      row.insertCell(2).innerText = p.qty;
+    });
+  }
+
+  function addToCart(index) {
+    if (products[index].qty <= 0) {
+      alert("Nuk ka më stok për këtë produkt!");
+      return;
+    }
+    cart.push({ ...products[index], index });
+    updateCart();
+  }
+
+  function updateCart() {
+    let cTable = document.getElementById('cartTable');
+    cTable.innerHTML = "<tr><th>Produkt</th><th>Çmimi</th><th>Veprim</th></tr>";
+    cart.forEach((p, i) => {
+      let row = cTable.insertRow();
+      row.insertCell(0).innerText = p.name;
+      row.insertCell(1).innerText = p.price + " Lekë";
+      let actionCell = row.insertCell(2);
+      let btn = document.createElement("button");
+      btn.innerText = "❌";
+      btn.style.background = "#cc0000";
+      btn.style.color = "white";
+      btn.onclick = () => removeFromCart(i);
+      actionCell.appendChild(btn);
+    });
+  }
+
+  function removeFromCart(i) {
+    cart.splice(i, 1);
+    updateCart();
+  }
+
+  function clearCart() {
+    cart = [];
+    updateCart();
+  }
+
+  function confirmSale() {
+    cart.forEach(p => {
+      sales.push(p);
+      totalSales += p.price;
+      let prod = products[p.index];
+      if (prod) prod.qty--;
+    });
+    cart = [];
+    updateCart();
+    updateTables();
+    updateSales();
+  }
+
+  function updateSales() {
+    let sTable = document.getElementById('salesTable');
+    sTable.innerHTML = "<tr><th>Produkti</th><th>Çmimi</th></tr>";
+    sales.forEach(s => {
+      let row = sTable.insertRow();
+      row.insertCell(0).innerText = s.name;
+      row.insertCell(1).innerText = s.price + " Lekë";
+    });
+    document.getElementById('totalSales').innerText = "Xhiro Totale: " + totalSales + " Lekë";
+  }
+
+  function resetSales() {
+    if (confirm("Je i sigurt që do të mbyllësh turnin?")) {
+      sales = [];
+      totalSales = 0;
+      updateSales();
+    }
+  }
+</script>
+</body>
+</html>
+
